@@ -1,0 +1,33 @@
+# Publication automatique sur npm a chaque tag `vX.Y.Z` (Trusted Publishing / OIDC).
+# Prerequis (une fois) : sur npmjs.com -> package fameen-messaging -> Settings ->
+# Trusted Publisher : owner konatem-mk9, repo fameen-messaging-node,
+# workflow publish.yml, environment npm.
+name: Publier sur npm
+
+on:
+  push:
+    tags: ["v*"]
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment: npm
+    permissions:
+      # Requis pour l'OIDC npm — aucun token/secret a configurer.
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: "https://registry.npmjs.org"
+
+      - name: npm recent (Trusted Publishing exige npm >= 11.5)
+        run: npm install -g npm@latest
+
+      - run: npm ci
+
+      # prepublishOnly enchaine typecheck + build + les 15 tests avant l'envoi.
+      - run: npm publish
