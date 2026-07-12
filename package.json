@@ -1,0 +1,50 @@
+{
+  "name": "fameen-messaging",
+  "version": "0.1.0",
+  "description": "SDK Node.js officiel de l'API Fameen Messaging — envoi de SMS, WhatsApp et emails transactionnels avec webhooks signés.",
+  "keywords": [
+    "fameen",
+    "sms",
+    "whatsapp",
+    "email",
+    "messaging",
+    "guinee",
+    "notifications",
+    "api"
+  ],
+  "license": "MIT",
+  "author": "Fameen Groupe",
+  "homepage": "https://business.fameengroupe.com/communication/api",
+  "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsup src/index.ts --format esm,cjs --dts --clean --target node18",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "prepublishOnly": "npm run typecheck && npm run build && npm test"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.7",
+    "tsup": "^8.3.5",
+    "typescript": "^5.7.3",
+    "vitest": "^4.1.7"
+  }
+}
