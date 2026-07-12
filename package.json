@@ -15,6 +15,13 @@
   "license": "MIT",
   "author": "Fameen Groupe",
   "homepage": "https://business.fameengroupe.com/communication/api",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/konatem-mk9/fameen-messaging-node.git"
+  },
+  "bugs": {
+    "url": "https://github.com/konatem-mk9/fameen-messaging-node/issues"
+  },
   "type": "module",
   "engines": {
     "node": ">=18"
