@@ -1,5 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
-import { FameenApiError, FameenConnectionError, FameenMessaging } from '../src/index';
+import { mkdtempSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { FameenApiError, FameenConnectionError, FameenMessaging, fileAttachment, toBase64 } from '../src/index';
 
 type FetchMock = ReturnType<typeof vi.fn>;
 
@@ -161,6 +164,76 @@ describe('FameenMessaging', () => {
 
     await expect(client.wallet.balance()).rejects.toBeInstanceOf(FameenConnectionError);
     expect(fetchMock).toHaveBeenCalledTimes(2); // 1 tentative + 1 réessai
+  });
+
+  it('encode un média (Buffer) en base64 via le raccourci `media`', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ success: true, data: MESSAGE }));
+    const client = makeClient(fetchMock);
+
+    await client.whatsapp.send({
+      to: '+224620000000',
+      message: 'Votre facture',
+      media: Buffer.from('%PDF-1.4 hello'),
+      fileName: 'facture.pdf',
+    });
+
+    const body = JSON.parse(fetchMock.mock.calls[0]![1].body);
+    expect(body.media).toBe(Buffer.from('%PDF-1.4 hello').toString('base64'));
+    expect(body.fileName).toBe('facture.pdf');
+  });
+
+  it('encode chaque pièce jointe du tableau `attachments`', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ success: true, data: MESSAGE }));
+    const client = makeClient(fetchMock);
+
+    await client.email.send({
+      to: 'x@y.com',
+      subject: 'Docs',
+      message: 'Voir pièces jointes',
+      attachments: [
+        { content: Buffer.from('un'), filename: 'a.pdf', contentType: 'application/pdf' },
+        { content: 'ZGV1eA==', filename: 'b.txt' }, // déjà en base64 → passthrough
+      ],
+    });
+
+    const body = JSON.parse(fetchMock.mock.calls[0]![1].body);
+    expect(body.attachments).toEqual([
+      { content: Buffer.from('un').toString('base64'), filename: 'a.pdf', contentType: 'application/pdf', type: undefined },
+      { content: 'ZGV1eA==', filename: 'b.txt', contentType: undefined, type: undefined },
+    ]);
+  });
+
+  it('autorise un message vide quand un média est fourni', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ success: true, data: MESSAGE }));
+    const client = makeClient(fetchMock);
+    await expect(
+      client.whatsapp.send({ to: '+224620000000', message: '', media: Buffer.from('img'), mediaType: 'image' }),
+    ).resolves.toBeDefined();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('refuse localement un média sur le canal SMS', async () => {
+    const fetchMock = vi.fn();
+    const client = makeClient(fetchMock);
+    await expect(async () =>
+      client.sms.send({ to: '+224620000000', message: 'x', media: Buffer.from('img') }),
+    ).rejects.toThrow(TypeError);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('toBase64 : passthrough des chaînes, encodage des octets', () => {
+    expect(toBase64('ZGVqYQ==')).toBe('ZGVqYQ==');
+    expect(toBase64(Buffer.from('hello'))).toBe('aGVsbG8=');
+    expect(toBase64(new Uint8Array([104, 105]))).toBe(Buffer.from('hi').toString('base64'));
+  });
+
+  it('fileAttachment lit un fichier local (nom + contenu base64)', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'fameen-'));
+    const file = join(dir, 'note.txt');
+    writeFileSync(file, 'contenu de test');
+    const att = await fileAttachment(file);
+    expect(att.filename).toBe('note.txt');
+    expect(toBase64(att.content)).toBe(Buffer.from('contenu de test').toString('base64'));
   });
 
   it('récupère le solde du portefeuille', async () => {

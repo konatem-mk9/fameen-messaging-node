@@ -58,6 +58,35 @@ await fameen.whatsapp.send({ to: '+224620000000', message: '…' });
 await fameen.email.send({ to: 'client@example.com', subject: 'Confirmation', message: '…' });
 ```
 
+## Médias (pièces jointes)
+
+WhatsApp et email acceptent des pièces jointes (PDF, images, vidéo, audio). Passez un `Buffer`/`Uint8Array` (ou un base64) — le SDK l'encode ; l'API héberge le fichier et le distribue. **SMS non supporté.** Quand un média est fourni, `message` peut être vide.
+
+```ts
+import { FameenMessaging, fileAttachment } from 'fameen-messaging';
+import { readFileSync } from 'node:fs';
+
+const fameen = new FameenMessaging({ apiKey: process.env.FAMEEN_API_KEY! });
+
+// WhatsApp : un seul média par message, message = légende (facultative)
+await fameen.whatsapp.send({
+  to: '+224620000000',
+  message: 'Votre facture',
+  media: readFileSync('facture.pdf'),
+  fileName: 'facture.pdf',
+});
+
+// Email : plusieurs pièces jointes
+await fameen.email.send({
+  to: 'client@exemple.com',
+  subject: 'Vos documents',
+  message: 'Bonjour, voir en pièces jointes.',
+  attachments: [await fileAttachment('facture.pdf'), await fileAttachment('cgv.pdf')],
+});
+```
+
+Chaque pièce jointe : `{ content, filename?, contentType?, type? }` où `content` est un `Buffer`/`Uint8Array`/base64 et `type` vaut `image | video | audio | document` (déduit du type MIME si absent). Max 16 Mo par fichier.
+
 ## Lecture & solde
 
 ```ts

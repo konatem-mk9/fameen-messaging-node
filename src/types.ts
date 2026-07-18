@@ -1,6 +1,33 @@
 /** Canaux d'envoi supportés par l'API. */
 export type Channel = 'sms' | 'whatsapp' | 'email';
 
+/** Classe de média (détermine le rendu WhatsApp). Déduite du type MIME si absente. */
+export type MediaClass = 'image' | 'video' | 'audio' | 'document';
+
+/**
+ * Contenu d'un fichier joint. Accepté sous plusieurs formes — le SDK encode
+ * toujours en base64 avant l'envoi :
+ * - `Buffer` / `Uint8Array` / `ArrayBuffer` : octets bruts (ex. `fs.readFileSync(...)`) ;
+ * - `string` : déjà en base64 (préfixe data-URI toléré).
+ */
+export type MediaContent = string | Uint8Array | ArrayBuffer;
+
+/**
+ * Pièce jointe d'un message (WhatsApp ou email). Le fichier voyage encodé en
+ * base64 ; l'API l'héberge puis le distribue (URL signée pour WhatsApp, pièce
+ * jointe inline pour l'email). Aucune URL publique n'est requise de votre côté.
+ */
+export interface Attachment {
+  /** Contenu du fichier (octets ou base64). */
+  content: MediaContent;
+  /** Nom de fichier affiché (surtout utile pour les documents). */
+  filename?: string;
+  /** Type MIME. Déduit du nom de fichier si absent. */
+  contentType?: string;
+  /** Classe média WhatsApp. Déduite du type MIME si absente. */
+  type?: MediaClass;
+}
+
 /** Cycle de vie d'un message : queued → sending → sent → delivered | failed. */
 export type MessageStatus = 'queued' | 'sending' | 'sent' | 'delivered' | 'failed';
 
@@ -89,6 +116,20 @@ export interface CreateMessageParams {
   subject?: string;
   /** URL HTTPS publique notifiée à chaque changement de statut. */
   statusCallback?: string;
+  /**
+   * Pièces jointes (PDF, images, vidéo, audio). WhatsApp : un seul média par
+   * message ; Email : plusieurs pièces jointes. Non supporté en SMS.
+   * Quand un média est fourni, `message` peut être vide (légende facultative).
+   */
+  attachments?: Attachment[];
+  /** Raccourci mono-média : contenu du fichier (équivaut à `attachments: [{ content }]`). */
+  media?: MediaContent;
+  /** Nom de fichier pour le raccourci `media`. */
+  fileName?: string;
+  /** Type MIME pour le raccourci `media` (déduit du nom de fichier si absent). */
+  contentType?: string;
+  /** Classe média WhatsApp pour le raccourci `media` (déduite du type MIME si absente). */
+  mediaType?: MediaClass;
 }
 
 /** Paramètres d'un envoi par canal dédié (`POST /v1/{sms|whatsapp|email}/send`). */

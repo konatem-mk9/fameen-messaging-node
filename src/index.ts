@@ -7,8 +7,12 @@ export {
   type FameenErrorCode,
 } from './errors';
 export { verifyWebhookSignature, constructWebhookEvent } from './webhooks';
+export { fileAttachment, toBase64 } from './media';
 export type {
   Channel,
+  MediaClass,
+  MediaContent,
+  Attachment,
   MessageStatus,
   MessageResource,
   MessageList,

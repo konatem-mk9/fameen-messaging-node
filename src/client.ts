@@ -1,10 +1,13 @@
 import { FameenApiError, FameenConnectionError, type FameenErrorCode } from './errors';
+import { hasMedia, serializeSendBody } from './media';
 import type {
+  Attachment,
   Channel,
   CreateMessageParams,
   HistoryPage,
   HistoryParams,
   ListMessagesParams,
+  MediaContent,
   MessageList,
   MessageResource,
   RateLimitInfo,
@@ -13,7 +16,7 @@ import type {
   WalletBalance,
 } from './types';
 
-const VERSION = '0.1.0';
+const VERSION = '0.2.0';
 const DEFAULT_BASE_URL = 'https://business.fameengroupe.com/api/v1';
 
 export interface FameenMessagingOptions {
@@ -211,12 +214,20 @@ export class FameenMessaging {
 }
 
 /** Valide les champs minimum avant d'appeler l'API (meilleure DX). */
-function assertSendable(params: { to?: string; message?: string }, channel?: Channel): void {
+function assertSendable(
+  params: { to?: string; message?: string; media?: MediaContent; attachments?: Attachment[] },
+  channel?: Channel,
+): void {
   if (!params || typeof params.to !== 'string' || !params.to.trim()) {
     throw new TypeError('`to` est requis (numéro E.164 ou adresse email).');
   }
-  if (typeof params.message !== 'string' || !params.message.trim()) {
-    throw new TypeError('`message` est requis et ne peut pas être vide.');
+  const withMedia = hasMedia(params);
+  // Un message peut n'être qu'un média (légende facultative).
+  if (!withMedia && (typeof params.message !== 'string' || !params.message.trim())) {
+    throw new TypeError('`message` est requis (ou fournissez un média).');
+  }
+  if (withMedia && channel === 'sms') {
+    throw new TypeError('Le canal SMS ne supporte pas les pièces jointes.');
   }
   if (channel && channel !== 'email' && params.to.includes('@')) {
     throw new TypeError(`\`to\` ressemble à un email mais le canal demandé est "${channel}".`);
@@ -231,7 +242,7 @@ export class MessagesResource {
   create(params: CreateMessageParams, options: RequestOptions = {}): Promise<MessageResource> {
     assertSendable(params, params.channel);
     return this.client.request<MessageResource>('POST', '/messages', {
-      body: params,
+      body: serializeSendBody(params),
       idempotencyKey: options.idempotencyKey,
     });
   }
@@ -272,7 +283,7 @@ abstract class ChannelResource {
   send(params: SendParams, options: RequestOptions = {}): Promise<MessageResource> {
     assertSendable(params, this.channel);
     return this.client.request<MessageResource>('POST', this.path, {
-      body: params,
+      body: serializeSendBody(params),
       idempotencyKey: options.idempotencyKey,
     });
   }
