@@ -7,7 +7,7 @@ SDK Node.js officiel de l'**API Fameen Messaging** — envoyez des SMS, des mess
 - Idempotence intégrée (`Idempotency-Key`)
 - Vérification de signature des webhooks (HMAC-SHA256, comparaison en temps constant)
 
-> Node.js ≥ 18. Documentation complète de l'API : `https://business.fameengroupe.com/api/docs`.
+> Node.js ≥ 18. Documentation complète de l'API : `https://fameenbusiness.com/api/docs`.
 
 ## Installation
 
@@ -86,6 +86,51 @@ await fameen.email.send({
 ```
 
 Chaque pièce jointe : `{ content, filename?, contentType?, type? }` où `content` est un `Buffer`/`Uint8Array`/base64 et `type` vaut `image | video | audio | document` (déduit du type MIME si absent). Max 16 Mo par fichier.
+
+## Codes de vérification (OTP)
+
+Authentifiez un utilisateur par code à usage unique sur **SMS, WhatsApp ou email**.
+Le code est généré, stocké haché et vérifié **côté serveur** : il ne transite jamais
+par votre application et n'apparaît dans aucune réponse. Vous n'avez ni génération,
+ni stockage, ni expiration à gérer.
+
+```ts
+// 1. Envoyer le code (canal déduit du destinataire si absent)
+const v = await fameen.otp.send({ to: '+224620000000', channel: 'sms' });
+// → { verificationId: 'ver_…', status: 'pending', expiresAt: '…', attemptsRemaining: 5 }
+
+// 2. Contrôler le code saisi par l'utilisateur
+const r = await fameen.otp.verify({ verificationId: v.verificationId, code: '483920' });
+if (r.status === 'approved') {
+  // utilisateur authentifié
+} else {
+  // r.reason : 'invalid_code' | 'expired' | 'max_attempts'
+  console.log(`Échec (${r.reason}), ${r.attemptsRemaining} tentative(s) restante(s)`);
+}
+```
+
+Un code erroné **ne lève pas d'erreur** : la réponse porte `status: 'rejected'` et
+`reason`. Seules les erreurs de transport ou d'authentification lèvent.
+
+Si vous ne conservez pas le `verificationId`, vérifiez par destinataire — la
+vérification en cours la plus récente est utilisée :
+
+```ts
+await fameen.otp.verify({ to: '+224620000000', code: '483920' });
+```
+
+Options d'envoi : `codeLength` (4–8), `ttlSeconds` (60–3600), `maxAttempts` (1–10),
+`template` (doit contenir `{{code}}` ; marqueurs `{{code}}`, `{{minutes}}`,
+`{{seconds}}`, `{{company}}`), `subject` (email) et `statusCallback`. Sans ces
+paramètres, les réglages du compte s'appliquent (portail → Réglages → Codes OTP).
+
+À savoir :
+
+- L'envoi exige **le scope du canal** utilisé et consomme un crédit de ce canal.
+- Un code validé est **à usage unique** ; le revérifier renvoie `rejected`.
+- Demander un nouveau code pour le même destinataire **annule le précédent**.
+- `fameen.otp.get(verificationId)` retourne l'état courant, jamais le code.
+- `otp.send` accepte une clé d'idempotence : `{ idempotencyKey: 'otp-001' }`.
 
 ## Lecture & solde
 
@@ -172,7 +217,7 @@ Fournissez systématiquement une `idempotencyKey` métier (ID de commande, de no
 ```ts
 new FameenMessaging({
   apiKey: 'fam_…',                                        // requis
-  baseUrl: 'https://business.fameengroupe.com/api/v1',    // défaut
+  baseUrl: 'https://fameenbusiness.com/api/v1',    // défaut
   timeoutMs: 30_000,                                      // timeout par tentative
   maxRetries: 2,                                          // réessais automatiques
   fetch: customFetch,                                     // injection (tests, proxy)

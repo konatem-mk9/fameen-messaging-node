@@ -183,3 +183,65 @@ export interface RateLimitInfo {
   /** Fin de fenêtre, epoch en secondes (`X-RateLimit-Reset`). */
   reset: number;
 }
+
+// ── Codes de vérification (OTP) ──────────────────────────────────────────────
+
+/** Cycle de vie d'une vérification. */
+export type VerificationStatus =
+  | 'pending'
+  | 'approved'
+  | 'rejected'
+  | 'expired'
+  | 'failed'
+  | 'canceled';
+
+/** Motif d'un `status: "rejected"`. */
+export type VerificationRejectReason = 'invalid_code' | 'expired' | 'max_attempts';
+
+/**
+ * Une vérification par code à usage unique. Ne contient **jamais** le code :
+ * celui-ci est généré côté serveur et n'est envoyé qu'au destinataire.
+ */
+export interface VerificationResource {
+  verificationId: string;
+  status: VerificationStatus;
+  channel: Channel;
+  to: string;
+  attempts: number;
+  maxAttempts: number;
+  /** Tentatives restantes avant fermeture définitive de la vérification. */
+  attemptsRemaining: number;
+  expiresAt: string;
+  createdAt: string;
+  /** SID du message porteur du code (suivi de livraison, facturation). */
+  messageSid?: string | null;
+  /** Renseigné uniquement lorsque `status` vaut `rejected`. */
+  reason?: VerificationRejectReason;
+}
+
+export interface SendOtpParams {
+  /** Numéro international (sms/whatsapp) ou adresse email. */
+  to: string;
+  /** Déduit du destinataire si absent : email si « @ », sinon sms. */
+  channel?: Channel;
+  /** 4 à 8 chiffres (défaut : réglage du compte). */
+  codeLength?: number;
+  /** 60 à 3600 secondes (défaut : réglage du compte). */
+  ttlSeconds?: number;
+  /** 1 à 10 tentatives (défaut : réglage du compte). */
+  maxAttempts?: number;
+  /** Gabarit ponctuel. Doit contenir `{{code}}`. */
+  template?: string;
+  /** Objet du message (canal email). */
+  subject?: string;
+  statusCallback?: string;
+}
+
+export interface VerifyOtpParams {
+  /** Recommandé : l'identifiant renvoyé par `otp.send()`. */
+  verificationId?: string;
+  /** À défaut : le destinataire ; la vérification en cours la plus récente est utilisée. */
+  to?: string;
+  channel?: Channel;
+  code: string;
+}

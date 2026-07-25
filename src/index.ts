@@ -1,4 +1,5 @@
 export { FameenMessaging, type FameenMessagingOptions } from './client';
+export { OtpResource } from './client';
 export {
   FameenError,
   FameenApiError,
@@ -26,4 +27,9 @@ export type {
   HistoryParams,
   HistoryPage,
   RateLimitInfo,
+  VerificationStatus,
+  VerificationRejectReason,
+  VerificationResource,
+  SendOtpParams,
+  VerifyOtpParams,
 } from './types';

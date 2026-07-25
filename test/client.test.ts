@@ -56,7 +56,7 @@ describe('FameenMessaging', () => {
     expect(msg).toEqual(MESSAGE);
     expect(fetchMock).toHaveBeenCalledTimes(1);
     const [url, init] = fetchMock.mock.calls[0]!;
-    expect(String(url)).toBe('https://business.fameengroupe.com/api/v1/messages');
+    expect(String(url)).toBe('https://fameenbusiness.com/api/v1/messages');
     expect(init.method).toBe('POST');
     expect(init.headers.Authorization).toBe('Bearer fam_test_key');
     expect(init.headers['Idempotency-Key']).toBe('order-1');

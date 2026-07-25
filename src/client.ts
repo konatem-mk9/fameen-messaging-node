@@ -14,15 +14,18 @@ import type {
   RequestOptions,
   SendParams,
   WalletBalance,
+  SendOtpParams,
+  VerifyOtpParams,
+  VerificationResource,
 } from './types';
 
-const VERSION = '0.2.0';
-const DEFAULT_BASE_URL = 'https://business.fameengroupe.com/api/v1';
+const VERSION = '1.0.0';
+const DEFAULT_BASE_URL = 'https://fameenbusiness.com/api/v1';
 
 export interface FameenMessagingOptions {
   /** Clé API du compte (`fam_…`) — jamais côté navigateur. */
   apiKey: string;
-  /** Défaut : `https://business.fameengroupe.com/api/v1`. */
+  /** Défaut : `https://fameenbusiness.com/api/v1`. */
   baseUrl?: string;
   /** Timeout par tentative, en millisecondes (défaut : 30 000). */
   timeoutMs?: number;
@@ -58,6 +61,7 @@ export class FameenMessaging {
   readonly whatsapp: WhatsappResource;
   readonly email: EmailResource;
   readonly wallet: WalletResource;
+  readonly otp: OtpResource;
 
   /** Compteurs `X-RateLimit-*` de la dernière réponse qui les fournissait. */
   lastRateLimit: RateLimitInfo | null = null;
@@ -88,6 +92,7 @@ export class FameenMessaging {
     this.whatsapp = new WhatsappResource(this);
     this.email = new EmailResource(this);
     this.wallet = new WalletResource(this);
+    this.otp = new OtpResource(this);
   }
 
   /** @internal */
@@ -310,5 +315,88 @@ export class WalletResource {
   /** Soldes SMS / WhatsApp / Email et mode de facturation. */
   balance(): Promise<WalletBalance> {
     return this.client.request<WalletBalance>('GET', '/wallet/balance');
+  }
+}
+
+/**
+ * Ressource « Verify » : codes à usage unique par SMS, WhatsApp ou email.
+ *
+ * Le code est généré, stocké haché et vérifié **côté serveur** : il ne transite
+ * jamais par votre application et n'apparaît dans aucune réponse. Vous n'avez ni
+ * génération, ni stockage, ni expiration à gérer.
+ *
+ * ```ts
+ * const v = await fameen.otp.send({ to: '+224620000000', channel: 'sms' });
+ * // …l'utilisateur saisit le code reçu…
+ * const r = await fameen.otp.verify({ verificationId: v.verificationId, code });
+ * if (r.status === 'approved') console.log('utilisateur authentifie');
+ * ```
+ */
+export class OtpResource {
+  constructor(private readonly client: FameenMessaging) {}
+
+  /**
+   * Génère un code et l'envoie sur le canal choisi.
+   * Nécessite le scope du canal utilisé (`sms`, `whatsapp` ou `email`) et
+   * consomme un crédit de ce canal, comme un message ordinaire.
+   */
+  send(params: SendOtpParams, options: RequestOptions = {}): Promise<VerificationResource> {
+    if (!params || typeof params.to !== 'string' || !params.to.trim()) {
+      throw new TypeError('`to` est requis.');
+    }
+    if (params.channel && params.channel !== 'email' && params.to.includes('@')) {
+      throw new TypeError(`\`to\` ressemble à un email mais le canal demandé est "${params.channel}".`);
+    }
+    if (params.template !== undefined && !params.template.includes('{{code}}')) {
+      throw new TypeError('`template` doit contenir le marqueur {{code}}.');
+    }
+    return this.client.request<VerificationResource>('POST', '/otp/send', {
+      body: {
+        to: params.to.trim(),
+        channel: params.channel,
+        codeLength: params.codeLength,
+        ttlSeconds: params.ttlSeconds,
+        maxAttempts: params.maxAttempts,
+        template: params.template,
+        subject: params.subject,
+        statusCallback: params.statusCallback,
+      },
+      idempotencyKey: options.idempotencyKey,
+    });
+  }
+
+  /**
+   * Contrôle le code saisi par l'utilisateur.
+   *
+   * Ne lève pas d'erreur sur un code erroné : la réponse porte
+   * `status: 'rejected'` et `reason` (`invalid_code`, `expired` ou
+   * `max_attempts`). Testez `status === 'approved'`.
+   */
+  verify(params: VerifyOtpParams): Promise<VerificationResource> {
+    if (!params || typeof params.code !== 'string' || !params.code.trim()) {
+      throw new TypeError('`code` est requis.');
+    }
+    if (!params.verificationId?.trim() && !params.to?.trim()) {
+      throw new TypeError('Fournissez `verificationId` ou `to`.');
+    }
+    return this.client.request<VerificationResource>('POST', '/otp/verify', {
+      body: {
+        verificationId: params.verificationId?.trim(),
+        to: params.to?.trim(),
+        channel: params.channel,
+        code: params.code.trim(),
+      },
+    });
+  }
+
+  /** État courant d'une vérification (jamais le code). */
+  get(verificationId: string): Promise<VerificationResource> {
+    if (!verificationId || !verificationId.trim()) {
+      throw new TypeError('`verificationId` est requis.');
+    }
+    return this.client.request<VerificationResource>(
+      'GET',
+      `/otp/${encodeURIComponent(verificationId.trim())}`,
+    );
   }
 }

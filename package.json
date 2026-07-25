@@ -1,6 +1,6 @@
 {
   "name": "fameen-messaging",
-  "version": "0.2.0",
+  "version": "1.0.0",
   "description": "SDK Node.js officiel de l'API Fameen Messaging — envoi de SMS, WhatsApp et emails transactionnels avec webhooks signés.",
   "keywords": [
     "fameen",
@@ -14,7 +14,7 @@
   ],
   "license": "MIT",
   "author": "Fameen Groupe",
-  "homepage": "https://business.fameengroupe.com/communication/api",
+  "homepage": "https://fameenbusiness.com/communication/api",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/konatem-mk9/fameen-messaging-node.git"
