@@ -178,6 +178,25 @@ app.post('/webhooks/fameen', express.raw({ type: 'application/json' }), (req, re
 
 Livraison : 5 réessais avec backoff sur non-2xx, timeout 10 s, HTTPS public obligatoire.
 
+## Authenticité du paquet
+
+Depuis la 1.0.2, `fameen-messaging` est publié par **Trusted Publishing** : la CI de
+GitHub Actions s'authentifie auprès de npm par échange de jeton OIDC, sans qu'aucun
+secret n'existe côté dépôt. npm y attache une **attestation de provenance** liant le
+tarball au commit et au workflow qui l'ont produit.
+
+Pour la vérifier :
+
+```bash
+npm audit signatures
+```
+
+La sortie doit confirmer la signature du registre **et** la provenance. Le badge
+correspondant est visible sur la page du paquet, avec un lien vers l'exécution
+GitHub Actions d'origine.
+
+Les versions ≤ 1.0.2 ont été publiées au jeton et n'ont pas de provenance.
+
 ## Gestion des erreurs
 
 ```ts
