@@ -1,8 +1,9 @@
 # fameen-messaging
 
-SDK Node.js officiel de l'**API Fameen Messaging** — envoyez des SMS, des messages WhatsApp et des emails transactionnels depuis votre application, avec suivi de statut par webhooks signés.
+SDK Node.js officiel de l'**API Fameen Messaging** — envoyez des SMS, des messages WhatsApp et des emails transactionnels depuis votre application, authentifiez vos utilisateurs par **code de vérification (OTP)**, avec suivi de statut par webhooks signés.
 
 - **Zéro dépendance** (fetch natif) · TypeScript first · ESM + CommonJS
+- **Codes de vérification (OTP)** générés, hachés et vérifiés côté serveur
 - Réessais automatiques intelligents (réseau, 429 avec `Retry-After`, 5xx idempotents)
 - Idempotence intégrée (`Idempotency-Key`)
 - Vérification de signature des webhooks (HMAC-SHA256, comparaison en temps constant)
