@@ -181,9 +181,12 @@ export class FameenMessaging {
     throw new FameenConnectionError('Réessais épuisés.', { cause: lastConnectionError });
   }
 
+  /** Repli quand la réponse ne porte pas de `error.code` exploitable. */
   private codeFromStatus(status: number): FameenErrorCode {
     switch (status) {
-      case 400: return 'bad_request';
+      // 400 couvre aussi `subscription_expired` ; sans corps lisible on ne peut
+      // pas les distinguer, donc on retient le cas général.
+      case 400: return 'invalid_request';
       case 401: return 'unauthorized';
       case 402: return 'insufficient_credits';
       case 403: return 'channel_not_allowed';

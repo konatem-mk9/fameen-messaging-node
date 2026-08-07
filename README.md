@@ -244,7 +244,7 @@ new FameenMessaging({
 });
 ```
 
-`client.lastRateLimit` expose les compteurs `X-RateLimit-*` de la dernière réponse (limite : 60 requêtes/min par clé).
+`client.lastRateLimit` expose les compteurs `X-RateLimit-*` de la dernière réponse (limite : 60 requêtes/min **par compte** — toutes les clés d'un compte partagent ce quota).
 
 ## Sécurité
 
