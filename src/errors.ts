@@ -1,10 +1,20 @@
 import type { RateLimitInfo } from './types';
 
-/** Codes d'erreur stables renvoyés par l'API (`error.code`). */
+/**
+ * Codes d'erreur stables renvoyés par l'API (`error.code`).
+ *
+ * Liste alignée sur celle que la plateforme émet réellement. `bad_request`
+ * en faisait partie par erreur : l'API renvoie `invalid_request` pour un 400,
+ * et une condition sur `bad_request` n'était donc jamais vraie.
+ *
+ * `unknown_error` n'est jamais émis par l'API : c'est la valeur de repli du SDK
+ * quand la réponse ne porte pas de code exploitable.
+ */
 export type FameenErrorCode =
-  | 'bad_request'
+  | 'invalid_request'
   | 'unauthorized'
   | 'insufficient_credits'
+  | 'subscription_expired'
   | 'channel_not_allowed'
   | 'not_found'
   | 'rate_limited'
