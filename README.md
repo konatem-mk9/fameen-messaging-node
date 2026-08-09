@@ -59,6 +59,29 @@ await fameen.whatsapp.send({ to: '+224620000000', message: '…' });
 await fameen.email.send({ to: 'client@example.com', subject: 'Confirmation', message: '…' });
 ```
 
+
+## WhatsApp — à faire une fois avant le premier envoi
+
+`whatsapp.send(...)` échoue tant que **votre** numéro WhatsApp Business n'est pas
+connecté : il n'existe aucun numéro partagé de repli, Meta imposant que chaque
+entreprise émette depuis le sien.
+
+1. Tableau de bord → **Paramètres → WhatsApp → Connecter WhatsApp**. Une fenêtre
+   Meta (*Embedded Signup*) vous fait choisir ou créer votre compte WhatsApp
+   Business et votre numéro ; la connexion se finalise au retour.
+2. Prérequis Meta : un compte Meta Business et un numéro **non déjà utilisé sur
+   WhatsApp** (ni l'app classique, ni WhatsApp Business), joignable pour recevoir
+   un code.
+
+**La fenêtre de 24 h — la règle qui surprend le plus.** Meta n'autorise le
+message libre que dans les 24 h suivant le dernier message **reçu** de ce
+contact. En dehors (ou pour un premier contact), seul un **gabarit approuvé**
+passe ; un message libre est refusé par Meta et la ressource finit en `failed`.
+Faites approuver vos gabarits depuis Paramètres → WhatsApp → Gabarits avant de
+planifier des envois sortants.
+
+Détail complet : <https://fameenbusiness.com/communication/api>
+
 ## Médias (pièces jointes)
 
 WhatsApp et email acceptent des pièces jointes (PDF, images, vidéo, audio). Passez un `Buffer`/`Uint8Array` (ou un base64) — le SDK l'encode ; l'API héberge le fichier et le distribue. **SMS non supporté.** Quand un média est fourni, `message` peut être vide.
