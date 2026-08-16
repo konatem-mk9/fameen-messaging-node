@@ -150,7 +150,7 @@ paramètres, les réglages du compte s'appliquent (portail → Réglages → Cod
 
 À savoir :
 
-- L'envoi exige **le scope du canal** utilisé et consomme un crédit de ce canal.
+- L'envoi consomme un crédit du canal utilisé. Toute clé créée depuis le tableau de bord couvre les trois canaux ; `channel_not_allowed` (403) ne concerne que d'anciennes clés restreintes.
 - Un code validé est **à usage unique** ; le revérifier renvoie `rejected`.
 - Demander un nouveau code pour le même destinataire **annule le précédent**.
 - `fameen.otp.get(verificationId)` retourne l'état courant, jamais le code.
@@ -272,7 +272,7 @@ new FameenMessaging({
 ## Sécurité
 
 - La clé `fam_…` est un **secret serveur** : jamais dans un navigateur, une app mobile ou un dépôt git.
-- Créez une clé par application/environnement, avec les seuls scopes nécessaires (`sms`, `whatsapp`, `email`).
+- Créez une clé par application/environnement, révocable indépendamment des autres.
 - Régénérez le secret webhook (`whsec_…`) en cas de doute — l'ancien est invalidé immédiatement.
 
 ## Développement
