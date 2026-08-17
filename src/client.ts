@@ -19,7 +19,7 @@ import type {
   VerificationResource,
 } from './types';
 
-const VERSION = '1.0.3';
+const VERSION = '1.0.4';
 const DEFAULT_BASE_URL = 'https://fameenbusiness.com/api/v1';
 
 export interface FameenMessagingOptions {
